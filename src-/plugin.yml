@@ -1,0 +1,121 @@
+api-version: 1.13 
+name: icJukeBox
+version: 1.15.1
+main: com.statiocraft.jukebox.scJukeBox
+
+author: jeussa
+description: scJukeBox minecraft bukkit/spigot server noteblock music plugin
+website: http\://www.statiocraft.com/
+
+commands:
+  music:
+    aliases: [song, track, scjukebox, icjukebox, mu, so, tr, scjb, icjb, jukebox]
+    description: Play a noteblock song!
+    usage: |
+           /music
+           /music help
+           /music <pageNumber>
+           /music item [shuffle, radio, random, list] <player>
+           /music play <song> <player>
+           /music off
+           /music radio
+           /music random
+           /music reload
+           /music shuffle
+  radio:
+    description: Toggle the server-radio
+    usage: /radio [on/off/skip]
+
+permissions:
+  music:
+    '*':
+      children:
+      - music.list
+      - music.item.*
+      - music.play.others
+      - music.radio
+      - music.radio.skip
+      - music.random
+      - music.reload
+      - music.shuffle
+      - music.shuffle.skip
+      default: op
+      description: All permissions of scJukeBox in one node
+    list:
+      default: op
+      description: Permission to use /music
+    play:
+      default: op
+      description: Permission to play the given song
+      others:
+        children:
+        - music.play
+        default: op
+        description: Permission to use /music play <song> on other players
+    item:
+      '*':
+        children:
+        - music.item.spawn.*
+        - music.item.use.*
+        default: op
+        description: Permission to both use and spawn any scJukeBox item
+      spawn:
+        '*':
+          children:
+          - music.item.spawn.radio
+          - music.item.spawn.random
+          - music.item.spawn.shuffle
+          - music.item.spawn.list
+          default: op
+          description: Permission to spawn any scJukeBox item
+        radio:
+          default: op
+          description: Permission to spawn the radio-item
+        random:
+          default: op
+          description: Permission to spawn the random-item
+        shuffle:
+          default: op
+          description: Permission to spawn the shuffle-item
+        list:
+          default: op
+          description: Permission to spawn the list-item
+      use:
+        '*':
+          children:
+          - music.item.use.radio
+          - music.item.use.random
+          - music.item.use.shuffle
+          - music.item.use.list
+          default: op
+          description: Permission to use any scJukeBox item
+        radio:
+          default: op
+          description: Permission to use the radio-item
+        random:
+          default: op
+          description: Permission to use the random-item
+        shuffle:
+          default: op
+          description: Permission to use the shuffle-item
+        list:
+          default: op
+          description: Permission to use the list-item
+    radio:
+      default: op
+      description: Permission to use /radio (or /music radio)
+      skip:
+        default: op
+        description: Permission to use /radio skip (or /music radio skip)
+    random:
+      default: op
+      description: Permission to use /music random
+    reload:
+      default: op
+      description: Permission to use /music reload
+    shuffle:
+      default: op
+      description: Permission to use /music shuffle
+      skip:
+        default: op
+        description: Permission to use /music shuffle skip
