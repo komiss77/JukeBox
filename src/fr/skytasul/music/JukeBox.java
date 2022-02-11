@@ -41,14 +41,13 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.io.File;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.komiss77.events.BungeeDataRecieved;
 
 public class JukeBox extends JavaPlugin implements Listener
 {
     public static int version;
     private static JukeBox instance;
     private boolean disable;
-    private static File playersFile;
-    public static FileConfiguration players;
     public static File songsFolder;
     public static JukeBoxRadio radio;
     private static LinkedList<Song> songs;
@@ -56,17 +55,11 @@ public class JukeBox extends JavaPlugin implements Listener
     private static Playlist playlist;
     public static int maxPage;
     public static boolean jukeboxClick;
-    //public static boolean sendMessages;
     public static boolean async;
     public static boolean autoJoin;
     public static boolean radioEnabled;
-    public static boolean radioOnJoin;
-    public static boolean autoReload;
     public static PlayerData defaultPlayer;
     public static List<World> worldsEnabled;
-    public static boolean worlds;
-    //public static boolean particles;
-   // public static boolean actionBar;
     public static String itemFormat;
     public static String songFormat;
     public ItemStack jukeboxItem;
@@ -76,12 +69,9 @@ public class JukeBox extends JavaPlugin implements Listener
         JukeBox.version = Integer.parseInt(Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3].split("_")[1]);
         JukeBox.radio = null;
         JukeBox.jukeboxClick = false;
-       // JukeBox.sendMessages = true;
         JukeBox.async = false;
         JukeBox.autoJoin = false;
         JukeBox.radioEnabled = true;
-        JukeBox.radioOnJoin = false;
-        JukeBox.autoReload = true;
         JukeBox.defaultPlayer = null;
         JukeBox.random = new Random();
     }
@@ -126,14 +116,6 @@ public class JukeBox extends JavaPlugin implements Listener
                 list.add(pdata.serialize());
             }
         }
-        JukeBox.players.set("players", (Object)list);
-        JukeBox.players.set("item", (Object)((this.jukeboxItem == null) ? null : this.jukeboxItem.serialize()));
-        try {
-            JukeBox.players.save(JukeBox.playersFile);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
         HandlerList.unregisterAll((Plugin)this);
     }
     
@@ -142,15 +124,10 @@ public class JukeBox extends JavaPlugin implements Listener
         this.loadLang();
         final FileConfiguration config = this.getConfig();
         JukeBox.jukeboxClick = config.getBoolean("jukeboxClick");
-       // JukeBox.sendMessages = config.getBoolean("sendMessages");
         JukeBox.async = config.getBoolean("asyncLoading");
         JukeBox.autoJoin = config.getBoolean("forceJoinMusic");
         JukeBox.defaultPlayer = PlayerData.deserialize(config.getConfigurationSection("defaultPlayerOptions").getValues(false), null);
-        //JukeBox.particles = (config.getBoolean("noteParticles") && JukeBoxInventory.version > 8);
-     //   JukeBox.actionBar = (config.getBoolean("actionBar") && JukeBoxInventory.version > 8);
         JukeBox.radioEnabled = config.getBoolean("radio");
-        JukeBox.radioOnJoin = config.getBoolean("radioOnJoin");
-        JukeBox.autoReload = config.getBoolean("reloadOnJoin");
         JukeBox.itemFormat = config.getString("itemFormat");
         JukeBox.songFormat = config.getString("songFormat");
         JukeBox.worldsEnabled = new ArrayList<World>();
@@ -160,7 +137,6 @@ public class JukeBox extends JavaPlugin implements Listener
                 JukeBox.worldsEnabled.add(world);
             }
         }
-        JukeBox.worlds = !JukeBox.worldsEnabled.isEmpty();
         if (JukeBox.async) {
             new BukkitRunnable() {
                 public void run() {
@@ -177,7 +153,7 @@ public class JukeBox extends JavaPlugin implements Listener
     
     private void finishEnabling() {
         this.getCommand("music").setExecutor((CommandExecutor)new CommandMusic());
-        this.getCommand("adminmusic").setExecutor((CommandExecutor)new CommandAdmin());
+        //this.getCommand("adminmusic").setExecutor((CommandExecutor)new CommandAdmin());
         this.getServer().getPluginManager().registerEvents((Listener)this, (Plugin)this);
         JukeBox.radioEnabled = (JukeBox.radioEnabled && !JukeBox.songs.isEmpty());
         if (JukeBox.radioEnabled) {
@@ -222,37 +198,8 @@ public class JukeBox extends JavaPlugin implements Listener
             JukeBox.playlist = new Playlist((Song[])JukeBox.songs.toArray(new Song[0]));
         }
         PlayerData.players = new HashMap<UUID, PlayerData>();
-        try {
-            JukeBox.playersFile = new File(this.getDataFolder(), "datas.yml");
-            boolean b = false;
-            if (!JukeBox.playersFile.exists()) {
-                b = true;
-                JukeBox.playersFile.createNewFile();
-            }
-            JukeBox.players = (FileConfiguration)YamlConfiguration.loadConfiguration(JukeBox.playersFile);
-            final boolean last = this.getConfig().contains("players");
-            if (!b || last) {
-                final FileConfiguration tmpPlayers = last ? this.getConfig() : JukeBox.players;
-                for (final Map<?, ?> m : tmpPlayers.getMapList("players")) {
-                    final PlayerData pdata = PlayerData.deserialize((Map<String, Object>)m, tmpSongs);
-                    PlayerData.players.put(pdata.getID(), pdata);
-                }
-                if (tmpPlayers.get("item") != null) {
-                    this.jukeboxItem = ItemStack.deserialize(tmpPlayers.getConfigurationSection("item").getValues(false));
-                }
-                if (last) {
-                    this.getLogger().info("Player datas were saved into config.yml; moved to players.yml");
-                    this.getConfig().set("players", (Object)null);
-                    this.saveConfig();
-                }
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        for (final Player p : Bukkit.getOnlinePlayers()) {
-            this.onJoin(new PlayerJoinEvent(p, ""));
-        }
+
+
     }
     
     void setMaxPage() {
@@ -303,7 +250,7 @@ public class JukeBox extends JavaPlugin implements Listener
     }
     
     @EventHandler
-    public void onJoin(final PlayerJoinEvent e) {
+    public void onBungeeData(final BungeeDataRecieved e) {
         final Player p = e.getPlayer();
         final UUID id = p.getUniqueId();
         PlayerData pdata = PlayerData.players.get(id);
@@ -311,7 +258,7 @@ public class JukeBox extends JavaPlugin implements Listener
             pdata = PlayerData.create(id);
             PlayerData.players.put(id, pdata);
         }
-        pdata.playerJoin(p, !JukeBox.worlds || JukeBox.worldsEnabled.contains(p.getWorld()));
+        pdata.playerJoin(p);
     }
     
     @EventHandler
@@ -344,22 +291,7 @@ public class JukeBox extends JavaPlugin implements Listener
         }
     }
     
-    @EventHandler
-    public void onTeleport(final PlayerTeleportEvent e) {
-        if (!JukeBox.worlds) {
-            return;
-        }
-        if (e.getFrom().getWorld() == e.getTo().getWorld()) {
-            return;
-        }
-        if (!JukeBox.worldsEnabled.contains(e.getTo().getWorld())) {
-            return;
-        }
-        final PlayerData pdata = PlayerData.players.get(e.getPlayer().getUniqueId());
-        if (pdata.songPlayer != null) {
-            pdata.stopPlaying(true);
-        }
-    }
+
     
     public static JukeBox getInstance() {
         return JukeBox.instance;

@@ -1,7 +1,3 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package fr.skytasul.music;
 
 import fr.skytasul.music.utils.Lang;
@@ -19,6 +15,10 @@ public class CommandMusic implements CommandExecutor
         }
         final Player p = (Player)sender;
         
+        if (!p.hasPermission("ostrov.music")) {
+            sender.sendMessage("§6Музыка доступна тем, кто хотя бы §3Герой..");
+            return false;
+        }
         
         if(args.length==0) {
             
@@ -38,6 +38,21 @@ public class CommandMusic implements CommandExecutor
                 } else {
                     pdata.playRandom();
                 }
+            } else if (args[0].equalsIgnoreCase("reload")){
+                if (!p.isOp()) {
+                    p.sendMessage("§cop!");
+                    return true;
+                }
+                try {
+                    JukeBox.getInstance().disableAll();
+                    JukeBox.getInstance().initAll();
+                }
+                catch (Exception ex) {
+                    sender.sendMessage("�cError while reloading. Please check the console and send the stacktrace to SkytAsul on SpigotMC.");
+                    ex.printStackTrace();
+                }
+                sender.sendMessage(Lang.RELOAD_FINISH);
+                return false;
             }
             
         }
@@ -46,9 +61,7 @@ public class CommandMusic implements CommandExecutor
     }
     
     public static void open(final Player p) {
-        if (JukeBox.worlds && !JukeBox.worldsEnabled.contains(p.getWorld())) {
-            return;
-        }
+        
         final PlayerData pdata = PlayerData.players.get(p.getUniqueId());
         if (pdata.linked != null) {
             final JukeBoxInventory inv = pdata.linked;
@@ -59,4 +72,6 @@ public class CommandMusic implements CommandExecutor
             new JukeBoxInventory(p);
         }
     }
+    
+    
 }

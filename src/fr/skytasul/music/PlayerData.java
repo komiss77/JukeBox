@@ -338,33 +338,34 @@ public class PlayerData implements Listener
         }
     }
     
-    public void playerJoin(final Player player, final boolean replay) {
+    public void playerJoin(final Player player) {
         this.p = player;
-        if (!replay) {
-            return;
-        }
-        if (JukeBox.radioOnJoin) {
-            this.setPlaylist(Playlists.RADIO, true);
-            return;
-        }
-        if (this.listening == Playlists.RADIO) {
-            return;
-        }
-        if (this.songPlayer == null) {
-            if (this.hasJoinMusic()) {
-                this.playRandom();
+        //if (!replay) {
+        //    return;
+        //}
+       // if (JukeBox.radioOnJoin) {
+        //    this.setPlaylist(Playlists.RADIO, true);
+        //    return;
+       // }
+        //if (this.listening == Playlists.RADIO) {
+        //    return;
+       //}
+        if (p.hasPermission("ostrov.music")) {
+            if (this.songPlayer == null) {
+                if (this.hasJoinMusic()) {
+                    this.playRandom();
+                }
             }
-        }
-        else if (!this.songPlayer.adminPlayed && JukeBox.autoReload) {
-            this.songPlayer.setPlaying(true);
-            JukeBox.sendMessage(this.p, String.valueOf(Lang.RELOAD_MUSIC) + " (" + JukeBox.getSongName(this.songPlayer.getSong()) + ")");
-        }
+        }// else if (!this.songPlayer.adminPlayed && JukeBox.autoReload) {
+         //   this.songPlayer.setPlaying(true);
+        //    JukeBox.sendMessage(this.p, String.valueOf(Lang.RELOAD_MUSIC) + " (" + JukeBox.getSongName(this.songPlayer.getSong()) + ")");
+       // }
     }
     
     public void playerLeave() {
-        if (!JukeBox.autoReload) {
+        //if (!JukeBox.autoReload) {
             this.stopPlaying(false);
-        }
+        //}
     }
     
     private void playSong(final boolean next) {

@@ -1,10 +1,5 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package fr.skytasul.music.utils;
 
-import java.util.Iterator;
 import fr.skytasul.music.JukeBox;
 import java.io.IOException;
 import java.lang.reflect.Field;

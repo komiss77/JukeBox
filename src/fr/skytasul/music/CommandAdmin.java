@@ -341,9 +341,7 @@ public class CommandAdmin implements CommandExecutor
         if (cp == null) {
             return "§cUnknown player.";
         }
-        if (JukeBox.worlds && !JukeBox.worldsEnabled.contains(cp.getWorld())) {
-            return "§cMusic isn't enabled in the world the player is into.";
-        }
+
         Song song;
         try {
             final int id = Integer.parseInt(args[2]);

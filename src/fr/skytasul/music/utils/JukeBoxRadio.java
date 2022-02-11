@@ -1,12 +1,7 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package fr.skytasul.music.utils;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.entity.Player;
-import java.util.Iterator;
 import java.util.UUID;
 import com.xxmicloxx.NoteBlockAPI.event.SongNextEvent;
 import com.xxmicloxx.NoteBlockAPI.model.RepeatMode;

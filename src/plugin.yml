@@ -10,17 +10,3 @@ commands:
   music:
     description: Main command for musics
     aliases: [jukebox]
-  adminmusic:
-    description: Admin command for musics
-    aliases: [amusic]
-    permission: music.command.admin
-
-permissions:
-  music.*:
-    description: Give access to JukeBox whole
-    children:
-      music.command: true
-      music.command.admin: true
-  music.command.admin:
-    description: Give access to /adminmusic
-    default: op
