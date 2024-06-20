@@ -75,37 +75,7 @@ public class JukeBoxInventory implements Listener
                 .name(String.valueOf(Lang.CHANGE_PLAYLIST) + Lang.RADIO)
                 .setCustomHeadTexture("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTQ4YThjNTU4OTFkZWM3Njc2NDQ0OWY1N2JhNjc3YmUzZWU4OGEwNjkyMWNhOTNiNmNjN2M5NjExYTdhZiJ9fX0=")
                 .build();
-        
-       /* final GameProfile profile = new GameProfile(UUID.randomUUID(), (String)null);
-        final PropertyMap propertyMap = profile.getProperties();
-        if (propertyMap == null) {
-            throw new IllegalStateException("Profile doesn't contain a property map");
-        } else {
-            propertyMap.put("textures", new Property("textures", "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTQ4YThjNTU4OTFkZWM3Njc2NDQ0OWY1N2JhNjc3YmUzZWU4OGEwNjkyMWNhOTNiNmNjN2M5NjExYTdhZiJ9fX0="));
-        }
-        ItemStack item;
-        if (JukeBoxInventory.version < 13) {
-            item = new ItemStack(Material.valueOf("SKULL_ITEM"), 1, (short)3);
-        }
-        else {
-            item = new ItemStack(Material.valueOf("PLAYER_HEAD"));
-        }
-        
-        ItemMeta headMeta = item.getItemMeta();
-        try {
-            final Field profileField = headMeta.getClass().getDeclaredField("profile");
-            profileField.setAccessible(true);
-            profileField.set(headMeta, profile);
-        }
-        catch (ReflectiveOperationException e) {
-            e.printStackTrace();
-            JukeBox.getInstance().getLogger().severe("An error occured during initialization of Radio item. Please report it to an administrator !");
-            item = new ItemStack(Material.TORCH);
-            headMeta = item.getItemMeta();
-        }
-        headMeta.setDisplayName(String.valueOf(Lang.CHANGE_PLAYLIST) + Lang.RADIO);
-        item.setItemMeta(headMeta);
-        radioItem = item;*/
+
     }
     
     public JukeBoxInventory(final Player p) {

@@ -1,15 +1,8 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package fr.skytasul.music;
 
 import fr.skytasul.music.utils.Playlists;
-import org.bukkit.inventory.ItemStack;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
 import org.bukkit.OfflinePlayer;
-import java.util.Iterator;
-import org.bukkit.Material;
 import java.io.InputStream;
 import com.xxmicloxx.NoteBlockAPI.utils.NBSDecoder;
 import java.io.FileInputStream;
@@ -295,7 +288,7 @@ public class CommandAdmin implements CommandExecutor
                 }
                 return false;
             }
-            case "setitem": {
+            /*case "setitem": {
                 if (!(sender instanceof Player)) {
                     sender.sendMessage("§cYou have to be a player to do that.");
                     return false;
@@ -309,7 +302,7 @@ public class CommandAdmin implements CommandExecutor
                 }
                 sender.sendMessage("§aItem edited. Now : �2" + ((JukeBox.getInstance().jukeboxItem == null) ? "null" : JukeBox.getInstance().jukeboxItem.toString()));
                 return false;
-            }
+            }*/
             case "shuffle": {
                 if (args.length < 2) {
                     sender.sendMessage(Lang.INCORRECT_SYNTAX);
