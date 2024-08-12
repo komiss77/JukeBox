@@ -239,7 +239,7 @@ public class ConfigFile {
                             Integer integer = NumberUtil.toInt(s[n]);
 
                             if (integer != null) {
-                                i.setAmount(n);
+                                i.amount(n);
                             }
                         } else {
                             String[] a = StringUtil.split(s[n], ':');

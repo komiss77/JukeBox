@@ -38,6 +38,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.komiss77.ApiOstrov;
 import ru.komiss77.events.LocalDataLoadEvent;
+import ru.komiss77.utils.ScreenUtil;
 
 public class JukeBox extends JavaPlugin implements Listener {
 
@@ -400,7 +401,7 @@ public class JukeBox extends JavaPlugin implements Listener {
         //   if (JukeBox.sendMessages) {
         //  if (JukeBox.actionBar) {
         //p.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
-        ApiOstrov.sendActionBarDirect(p, msg);
+        ScreenUtil.sendActionBarDirect(p, msg);
         //   }
         // else {
         //      p.sendMessage(msg);

@@ -82,10 +82,10 @@ public class ItemUtil {
             } else {
                 int amount = item1.getAmount();
 
-                item1.setAmount(item2.getAmount());
+                item1.amount(item2.getAmount());
                 boolean value = item1.equals(item2);
 
-                item1.setAmount(amount);
+                item1.amount(amount);
                 return value;
             }
         } else {
@@ -94,7 +94,7 @@ public class ItemUtil {
     }
 
     public static ItemStack resize(ItemStack item, int amount) {
-        item.setAmount(amount);
+        item.amount(amount);
         return item;
     }
 
@@ -202,15 +202,15 @@ public class ItemUtil {
         ItemMeta itemMeta = item.getItemMeta();
 
         if (enchantment1 != null) {
-            itemMeta.addEnchant(enchantment1, level1, true);
+            itemMeta.enchant(enchantment1, level1, true);
         }
 
         if (enchantment2 != null) {
-            itemMeta.addEnchant(enchantment2, level2, true);
+            itemMeta.enchant(enchantment2, level2, true);
         }
 
         if (enchantment3 != null) {
-            itemMeta.addEnchant(enchantment3, level3, true);
+            itemMeta.enchant(enchantment3, level3, true);
         }
 
         item.setItemMeta(itemMeta);

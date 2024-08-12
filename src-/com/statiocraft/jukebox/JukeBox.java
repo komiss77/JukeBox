@@ -136,7 +136,7 @@ public abstract class JukeBox {
     }
     
      public static void sendActionBar(Player p, String msg) {
-         ApiOstrov.sendActionBar(p, msg);
+         ScreenUtil.sendActionBar(p, msg);
     }
     
    
