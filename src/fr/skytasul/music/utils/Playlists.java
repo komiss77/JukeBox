@@ -1,30 +1,38 @@
-
 package fr.skytasul.music.utils;
 
-import fr.skytasul.music.JukeBoxInventory;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-public enum Playlists
-{
-    PLAYLIST("PLAYLIST", 0, Lang.PLAYLIST, JukeBoxInventory.item(Material.JUKEBOX, String.valueOf(Lang.CHANGE_PLAYLIST) + Lang.PLAYLIST, new String[0])), 
-    FAVORITES("FAVORITES", 1, Lang.FAVORITES, JukeBoxInventory.item(Material.NOTE_BLOCK, String.valueOf(Lang.CHANGE_PLAYLIST) + Lang.FAVORITES, new String[0])), 
-    RADIO("RADIO", 2, Lang.RADIO, JukeBoxInventory.radioItem);
-    
-    public final ItemStack item;
-    public final String name;
-    
-    private Playlists(final String s, final int n, final String name, final ItemStack item) {
-        this.item = item;
-        this.name = name;
-    }
-    
-    public static int indexOf(final Playlists playlist) {
-        for (int i = 0; i < values().length; ++i) {
-            if (values()[i] == playlist) {
-                return i;
-            }
-        }
-        return -1;
-    }
+import fr.skytasul.music.JukeBoxInventory;
+
+public enum Playlists{
+	
+	PLAYLIST(Lang.PLAYLIST, null, item(Material.JUKEBOX, Lang.PLAYLIST)), FAVORITES(Lang.FAVORITES, "music.favorites", item(Material.NOTE_BLOCK, Lang.FAVORITES)), RADIO(Lang.RADIO, "music.radio", JukeBoxInventory.radioItem);
+	
+	public final String permission;
+	public final String name;
+	public final ItemStack item;
+	
+	private Playlists(String name, String permission, ItemStack item) {
+		this.name = name;
+		this.permission = permission;
+		this.item = item;
+	}
+	
+	public boolean hasPermission(Player p) {
+		return true;//permission == null || p.hasPermission(permission);
+	}
+	
+	public static int indexOf(Playlists playlist){
+		for (int i = 0; i < values().length; i++){
+			if (values()[i] == playlist) return i;
+		}
+		return -1;
+	}
+	
+	public static ItemStack item(Material material, String name) {
+		return JukeBoxInventory.item(material, Lang.CHANGE_PLAYLIST + name, Lang.CHANGE_PLAYLIST_LORE);
+	}
+	
 }

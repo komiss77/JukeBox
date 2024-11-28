@@ -1,444 +1,485 @@
 package fr.skytasul.music;
 
-import com.xxmicloxx.NoteBlockAPI.NoteBlockAPI;
-import com.xxmicloxx.NoteBlockAPI.model.Song;
-import com.xxmicloxx.NoteBlockAPI.model.RepeatMode;
-import fr.skytasul.music.utils.Lang;
-import org.bukkit.Bukkit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import org.bukkit.entity.Player;
-import fr.skytasul.music.utils.CustomSongPlayer;
-import fr.skytasul.music.utils.Playlists;
-import com.xxmicloxx.NoteBlockAPI.model.Playlist;
-import java.util.UUID;
 import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
-public final class PlayerData implements Listener {
+import com.xxmicloxx.NoteBlockAPI.NoteBlockAPI;
+import com.xxmicloxx.NoteBlockAPI.event.SongDestroyingEvent;
+import com.xxmicloxx.NoteBlockAPI.event.SongLoopEvent;
+import com.xxmicloxx.NoteBlockAPI.event.SongNextEvent;
+import com.xxmicloxx.NoteBlockAPI.model.FadeType;
+import com.xxmicloxx.NoteBlockAPI.model.Playlist;
+import com.xxmicloxx.NoteBlockAPI.model.RepeatMode;
+import com.xxmicloxx.NoteBlockAPI.model.Song;
 
-    public static Map<UUID, PlayerData> players;
+import fr.skytasul.music.utils.CustomSongPlayer;
+import fr.skytasul.music.utils.Lang;
+import fr.skytasul.music.utils.Playlists;
 
-    private UUID id;
-    private final String name;
-    protected boolean join;
-    protected boolean shuffle;
-    protected int volume;
-    protected boolean particles;
-    protected boolean repeat;
-    protected boolean favoritesRemoved;
-    protected Playlist favorites;
-    protected Playlists listening;
-    public CustomSongPlayer songPlayer;
-    private List<Integer> randomPlaylist;
-    JukeBoxInventory linked;
+public class PlayerData implements Listener{
+	
+	boolean created = false;
+	
+	private UUID id;
+	private boolean shuffle = false;
+	private int volume = 100;
+	private boolean repeat = false;
 
-    private PlayerData(final String name, final UUID uuid) {
-        this.id = uuid;
-        this.name = name;
-        this.join = false;
-        this.shuffle = false;
-        this.volume = 100;
-        this.particles = true;
-        this.repeat = false;
-        this.favoritesRemoved = false;
-        this.listening = Playlists.PLAYLIST;
-        this.randomPlaylist = new ArrayList<>();
-        this.linked = null;
-        //Bukkit.getPluginManager().registerEvents((Listener) this, (Plugin) JukeBox.getInstance());
-    }
+	private boolean favoritesRemoved = false;
+	private Playlist favorites;
+	private Playlists listening = Playlists.PLAYLIST;
+	
+	public CustomSongPlayer songPlayer;
+	private Player p;
+	
+	private List<Integer> randomPlaylist = new ArrayList<>();
+	JukeBoxInventory linked = null;
 
-    public PlayerData(final Player p, final PlayerData defaults) {
-        this(p.getName(), p.getUniqueId());
-        this.setJoinMusic(defaults.hasJoinMusic());
-        this.setShuffle(defaults.isShuffle());
-        this.setVolume(defaults.getVolume());
-        this.setParticles(defaults.hasParticles());
-        this.setRepeat(defaults.isRepeatEnabled());
-    }
+	PlayerData(UUID id) {
+		this.id = id;
+		Bukkit.getPluginManager().registerEvents(this, JukeBox.getInstance());
+	}
+	
+	private PlayerData(UUID id, PlayerData defaults){
+		this(id);
+		this.created = true;
+		setShuffle(defaults.isShuffle());
+		setVolume(defaults.getVolume());
+		setRepeat(defaults.isRepeatEnabled());
+	}
+	
+	@EventHandler
+	public void onSongDestroy(SongDestroyingEvent e) {
+		if (e.getSongPlayer() == songPlayer) {
+			if (linked != null) linked.playingStopped();
+			songPlayer = null;
+			if (favoritesRemoved){
+				favoritesRemoved = false;
+				if (listening == Playlists.FAVORITES && favorites != null){
+					playList(favorites);
+				}
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onLoop(SongLoopEvent e){
+		if (e.getSongPlayer() == songPlayer){
+			if ((listening == Playlists.FAVORITES && favorites == null) || (listening == Playlists.PLAYLIST && !(shuffle || repeat))) {
+				songPlayer.destroy();
+				return;
+			}
+			playSong(true);
+		}
+	}
+	
+	@EventHandler
+	public void onSongNext(SongNextEvent e){
+		if (e.getSongPlayer() == songPlayer){
+			if (listening == Playlists.PLAYLIST && !shuffle){
+				stopPlaying(false);
+			}else playSong(true);
+		}
+	}
+	
+	@EventHandler
+	public void onLeave(PlayerQuitEvent e){
+		Player p = e.getPlayer();
+		if (!p.getUniqueId().equals(id)) return;
+		if (songPlayer != null) songPlayer.setPlaying(false);
+		p = null;
+	}
 
-    /*  @EventHandler
-    public void onLeave(final PlayerQuitEvent e) {
-        Player p = e.getPlayer();
-        if (!p.getUniqueId().equals(this.id)) {
-            return;
-        }
-        if (this.songPlayer != null) {
-            this.songPlayer.setPlaying(false);
-        }
-        p = null;
-    }*/
-    public void playList(final Playlist list) {
-        if (this.listening == Playlists.RADIO) {
-            JukeBox.sendMessage(Bukkit.getPlayerExact(name), Lang.UNAVAILABLE_RADIO);
-            return;
-        }
-        if (this.songPlayer != null) {
-            this.stopPlaying(false);
-        }
-        if (list == null) {
-            return;
-        }
-        (this.songPlayer = new CustomSongPlayer(list)).setParticlesEnabled(this.particles);
-        this.songPlayer.getFadeIn().setFadeDuration(0);
-        this.songPlayer.setAutoDestroy(true);
-        this.songPlayer.addPlayer(Bukkit.getPlayerExact(name));
-        this.songPlayer.setPlaying(true);
-        this.songPlayer.setRandom(this.shuffle);
-        this.songPlayer.setRepeatMode(this.repeat ? RepeatMode.ONE : RepeatMode.ALL);
-        this.playSong(false);
-        if (this.linked != null) {
-            this.linked.playingStarted();
-        }
-    }
+	public void playList(Playlist list){
+		if (listening == Playlists.RADIO){
+			JukeBox.sendMessage(getPlayer(), Lang.UNAVAILABLE_RADIO);
+			return;
+		}
+		if (songPlayer != null) stopPlaying(false);
+		if (list == null) return;
+		
+		songPlayer = new CustomSongPlayer(list);
+		songPlayer.getFadeIn().setFadeDuration(JukeBox.fadeInDuration);
+		if (JukeBox.fadeInDuration != 0) songPlayer.getFadeIn().setType(FadeType.LINEAR);
+		songPlayer.getFadeOut().setFadeDuration(JukeBox.fadeOutDuration);
+		if (JukeBox.fadeOutDuration != 0) songPlayer.getFadeOut().setType(FadeType.LINEAR);
+		songPlayer.setAutoDestroy(true);
+		songPlayer.addPlayer(getPlayer());
+		songPlayer.setPlaying(true);
+		songPlayer.setRandom(shuffle);
+		songPlayer.setRepeatMode(repeat ? RepeatMode.ONE : RepeatMode.ALL);
+		
+		playSong(false);
+		
+		if (JukeBox.getInstance().stopVanillaMusic != null) JukeBox.getInstance().stopVanillaMusic.accept(p);
+		if (linked != null) linked.playingStarted();
+	}
 
-    public boolean playSong(final Song song) {
-        if (this.listening == Playlists.RADIO) {
-            JukeBox.sendMessage(Bukkit.getPlayerExact(name), Lang.UNAVAILABLE_RADIO);
-            return false;
-        }
-        if (this.songPlayer != null) {
-            this.stopPlaying(false);
-        }
-        if (song == null) {
-            return false;
-        }
-        this.addSong(song, true);
-        return this.listening == Playlists.FAVORITES;
-    }
+	public boolean playSong(Song song){
+		if (listening == Playlists.RADIO){
+			JukeBox.sendMessage(getPlayer(), Lang.UNAVAILABLE_RADIO);
+			return false;
+		}
+		if (songPlayer != null) stopPlaying(false);
+		if (song == null) return false;
+		addSong(song, true);
+		return listening == Playlists.FAVORITES;
+	}
+	
+	public boolean addSong(Song song, boolean playIndex) {
+		Playlist toPlay = null;
+		switch (listening){
+		case FAVORITES:
+			if (favorites == null){
+				favorites = new Playlist(song);
+			}else {
+				if (favorites.contains(song)) break;
+				if (playIndex && songPlayer != null){
+					favorites.insert(songPlayer.getPlayedSongIndex() + 1, song);
+					finishPlaying();
+				}else favorites.add(song);
+			}
+			toPlay = favorites;
+			break;
+		case PLAYLIST:
+			randomPlaylist.add(JukeBox.getPlaylist().getIndex(song));
+			if (playIndex) finishPlaying();
+			toPlay = JukeBox.getPlaylist();
+			break;
+		case RADIO:
+			return false;
+		}
+		if (songPlayer == null && getPlayer() != null){
+			playList(toPlay);
+			return listening == Playlists.FAVORITES;
+		}
+		return true;
+	}
+	
+	public void removeSong(Song song){
+		switch (listening){
+		case FAVORITES:
+			if (favorites.getCount() == 1){
+				favorites = null;
+				favoritesRemoved = true;
+				songPlayer.setRepeatMode(repeat ? RepeatMode.ONE : RepeatMode.NO);
+			}else favorites.remove(song);
+			break;
+		case PLAYLIST:
+			randomPlaylist.remove((Integer) JukeBox.getPlaylist().getIndex(song));
+			break;
+		case RADIO:
+			break;
+		}
+	}
+	
+	public boolean isInPlaylist(Song song){
+		switch (listening){
+		case FAVORITES:
+			if (favorites != null) return favorites.contains(song);
+			break;
+		case PLAYLIST:
+			return randomPlaylist.contains(JukeBox.getPlaylist().getIndex(song));
+		case RADIO:
+			return false;
+		}
+		return false;
+	}
 
-    public boolean addSong(final Song song, final boolean playIndex) {
-        Playlist toPlay = null;
-        switch (this.listening) {
-            case FAVORITES: {
-                if (this.favorites == null) {
-                    this.favorites = new Playlist(new Song[]{song});
-                } else if (playIndex && this.songPlayer != null) {
-                    this.favorites.insert(this.songPlayer.getPlayedSongIndex() + 1, new Song[]{song});
-                    this.finishPlaying();
-                } else {
-                    this.favorites.add(new Song[]{song});
-                }
-                toPlay = this.favorites;
-                break;
-            }
-            case PLAYLIST: {
-                this.randomPlaylist.add(JukeBox.getPlaylist().getIndex(song));
-                if (playIndex) {
-                    this.finishPlaying();
-                }
-                toPlay = JukeBox.getPlaylist();
-                break;
-            }
-            case RADIO: {
-                return false;
-            }
-        }
-        if (this.songPlayer == null && Bukkit.getPlayerExact(name) != null) {
-            this.playList(toPlay);
-            return this.listening == Playlists.FAVORITES;
-        }
-        return true;
-    }
+	public void clearPlaylist(){
+		switch (listening){
+		case FAVORITES:
+			if (favorites == null) break;
+			for (int i = 0; i < favorites.getCount() - 1; i++){
+				favorites.remove(favorites.get(0));
+			}
+			removeSong(favorites.get(0));
+			break;
+		case PLAYLIST:
+			randomPlaylist.clear();
+			break;
+		case RADIO:
+			break;
+		}
+	}
+	
+	public Song playRandom() {
+		if (JukeBox.getSongs().isEmpty()) return null;
+		setPlaylist(Playlists.PLAYLIST, false);
+		Song song = JukeBox.randomSong();
+		playSong(song);
+		return song;
+	}
+	
+	public void stopPlaying(boolean msg) {
+		if (songPlayer == null) {
+			if (listening == Playlists.RADIO) {
+				JukeBox.radio.leave(getPlayer());
+				this.listening = Playlists.PLAYLIST;
+				setPlaylist(listening, false);
+			}
+			return;
+		}
+		CustomSongPlayer tmp = songPlayer;
+		this.songPlayer = null;
+		tmp.destroy();
+		if (msg && p != null && p.isOnline()) JukeBox.sendMessage(getPlayer(), Lang.MUSIC_STOPPED);
+		if (linked != null) linked.playingStopped();
+	}
+	
+	public Playlists getPlaylistType(){
+		return listening;
+	}
+	
+	public void nextPlaylist(){
+		Playlists toPlay = null;
+		
+		switch (listening) {
+		case PLAYLIST:
+			if (Playlists.FAVORITES.hasPermission(p)) {
+				toPlay = Playlists.FAVORITES;
+			}else if (Playlists.RADIO.hasPermission(p)) toPlay = Playlists.RADIO;
+			break;
+		case FAVORITES:
+			if (JukeBox.radioEnabled && Playlists.RADIO.hasPermission(p)) {
+				toPlay = Playlists.RADIO;
+			}else toPlay = Playlists.PLAYLIST;
+			break;
+		case RADIO:
+			toPlay = Playlists.PLAYLIST;
+			break;
+		}
+		if (toPlay == null) return;
+		setPlaylist(toPlay, true);
+	}
+	
+	public void setPlaylist(Playlists list, boolean play){
+		stopPlaying(false);
+		this.listening = list;
+		if (linked != null) {
+			linked.playlistItem();
+			linked.setSongsPage(p);
+		}
+		if (!play || getPlayer() == null) return;
+		switch (listening){
+		case PLAYLIST:
+			playList(JukeBox.getPlaylist());
+			break;
+		case FAVORITES:
+			playList(favorites);
+			break;
+		case RADIO:
+			JukeBox.radio.join(getPlayer());
+			if (linked != null) linked.playingStarted();
+			break;
+		}
+	}
+	
+	public boolean isListening() {
+		return songPlayer != null || listening == Playlists.RADIO;
+	}
+	
+	public boolean isPlaying() {
+		return p != null && (songPlayer == null ? listening == Playlists.RADIO : songPlayer.isPlaying());
+	}
 
-    public void removeSong(final Song song) {
-        switch (this.listening) {
-            case FAVORITES -> {
-                if (this.favorites.getCount() == 1) {
-                    this.favorites = null;
-                    this.favoritesRemoved = true;
-                    this.songPlayer.setRepeatMode(this.repeat ? RepeatMode.ONE : RepeatMode.NO);
-                }
-                this.favorites.remove(new Song[]{song});
-            }
-            case PLAYLIST -> {
-                this.randomPlaylist.remove((Object) JukeBox.getPlaylist().getIndex(song));
-            }
-        }
-    }
+	private void finishPlaying(){
+		if (songPlayer == null) return;
+		songPlayer.setTick((short) (songPlayer.getSong().getLength() + 1));
+		if (!songPlayer.isPlaying()) songPlayer.setPlaying(true);
+	}
+	
+	public void nextSong() {
+		if (listening == Playlists.RADIO){
+			JukeBox.sendMessage(getPlayer(), Lang.UNAVAILABLE_RADIO);
+			return;
+		}
+		if (songPlayer == null) {
+			playList(listening == Playlists.PLAYLIST ? JukeBox.getPlaylist() : favorites);
+		}else {
+			finishPlaying();
+		}
+	}
+	
+	public Song getListeningTo() {
+		if (songPlayer != null) return songPlayer.getSong();
+		if (getPlaylistType() == Playlists.RADIO) return JukeBox.radio.getSong();
+		return null;
+	}
+	
+	public String getListeningSongName() {
+		Song song = getListeningTo();
+		return song == null ? null : JukeBox.getSongName(song);
+	}
+	
+	public void playerJoin(Player player, boolean replay){
+		this.p = player;
+		if (!replay) return;
+		//if (JukeBox.radioOnJoin){
+		//	setPlaylist(Playlists.RADIO, true);
+		//	return;
+		//}
+		if (listening == Playlists.RADIO) return;
+		/*if (songPlayer == null){
+			if (hasJoinMusic()) {
+				if (JukeBox.songOnJoin != null) {
+					playSong(JukeBox.songOnJoin);
+				}else playRandom();
+			}
+		}else if (!songPlayer.adminPlayed && JukeBox.autoReload) {
+			songPlayer.setPlaying(true);
+			JukeBox.sendMessage(getPlayer(), Lang.RELOAD_MUSIC + " (" + JukeBox.getSongName(songPlayer.getSong()) + ")");
+		}*/	
+	}
+	
+	public void togglePlaying() {
+		if (songPlayer != null) {
+			songPlayer.setPlaying(!songPlayer.isPlaying());
+		}else {
+			if (listening == Playlists.RADIO) {
+				if (JukeBox.radio.isListening(getPlayer())) {
+					JukeBox.radio.leave(getPlayer());
+				}else JukeBox.radio.join(getPlayer());
+			}
+		}
+		if (JukeBox.getInstance().stopVanillaMusic != null && isPlaying()) JukeBox.getInstance().stopVanillaMusic.accept(p);
+	}
 
-    public boolean isInPlaylist(final Song song) {
-        switch (this.listening) {
-            case FAVORITES -> {
-                if (this.favorites != null) {
-                    return this.favorites.contains(song);
-                }
-            }
-            case PLAYLIST -> {
-                return this.randomPlaylist.contains(JukeBox.getPlaylist().getIndex(song));
-            }
-        }
-        return false;
-    }
+	public void playerLeave(){
+		if (!JukeBox.autoReload) stopPlaying(false);
+		p = null;
+	}
+	
+	private void playSong(boolean next){
+		if (listening == Playlists.PLAYLIST && !randomPlaylist.isEmpty()){
+			songPlayer.playSong(randomPlaylist.get(0));
+			int id = randomPlaylist.remove(0);
+			if (next && linked != null) linked.songItem(id, getPlayer());
+		}
+		JukeBox.sendMessage(getPlayer(), Lang.MUSIC_PLAYING + " " + JukeBox.getSongName(songPlayer.getSong()));
+	}
+	
 
-    public void clearPlaylist() {
-        switch (this.listening) {
-            case FAVORITES -> {
-                if (this.favorites == null) {
-                }
-                for (int i = 0; i < this.favorites.getCount() - 1; ++i) {
-                    this.favorites.remove(new Song[]{this.favorites.get(0)});
-                }
-                this.removeSong(this.favorites.get(0));
-            }
-            case PLAYLIST -> {
-                this.randomPlaylist.clear();
-            }
-        }
-    }
+	public UUID getID(){
+		return id;
+	}
 
-    public Song playRandom() {
-        if (JukeBox.getSongs().isEmpty()) {
-            return null;
-        }
-        this.setPlaylist(Playlists.PLAYLIST, false);
-        final Song song = JukeBox.randomSong();
-        this.playSong(song);
-        return song;
-    }
+	public Player getPlayer() {
+		return p;
+	}
 
-    public void stopPlaying(final boolean msg) {
-        if (this.songPlayer == null) {
-            return;
-        }
-        final CustomSongPlayer tmp = this.songPlayer;
-        this.songPlayer = null;
-        tmp.destroy();
-        if (msg && Bukkit.getPlayerExact(name) != null) {
-            JukeBox.sendMessage(Bukkit.getPlayerExact(name), Lang.MUSIC_STOPPED);
-        }
-        if (this.linked != null) {
-            this.linked.playingStopped();
-        }
-    }
 
-    public Playlists getPlaylistType() {
-        return this.listening;
-    }
 
-    public void nextPlaylist() {
-        if (this.listening == Playlists.RADIO) {
-            JukeBox.radio.leave(Bukkit.getPlayerExact(name));
-        }
-        switch (this.listening) {
-            case PLAYLIST -> {
-                this.setPlaylist(Playlists.FAVORITES, true);
-            }
-            case FAVORITES -> {
-                this.setPlaylist(JukeBox.radioEnabled ? Playlists.RADIO : Playlists.PLAYLIST, true);
-            }
-            case RADIO -> {
-                this.setPlaylist(Playlists.PLAYLIST, true);
-            }
-        }
-    }
+	public boolean isShuffle(){
+		return shuffle;
+	}
 
-    public void setPlaylist(final Playlists list, final boolean play) {
-        this.listening = list;
-        if (this.linked != null) {
-            this.linked.playlistItem();
-        }
-        if (!play || Bukkit.getPlayerExact(name) == null) {
-            return;
-        }
-        this.stopPlaying(false);
-        switch (this.listening) {
-            case PLAYLIST -> {
-                this.playList(JukeBox.getPlaylist());
-            }
-            case FAVORITES -> {
-                this.playList(this.favorites);
-            }
-            case RADIO -> {
-                JukeBox.radio.join(Bukkit.getPlayerExact(name));
-            }
-        }
-    }
+	public boolean setShuffle(boolean shuffle){
+		this.shuffle = shuffle;
+		if (songPlayer != null) songPlayer.setRandom(true);
+		if (linked != null) linked.shuffleItem();
+		return shuffle;
+	}
 
-    private void finishPlaying() {
-        if (this.songPlayer == null) {
-            return;
-        }
-        this.songPlayer.setTick((short) (this.songPlayer.getSong().getLength() + 1));
-        if (!this.songPlayer.isPlaying()) {
-            this.songPlayer.setPlaying(true);
-        }
-    }
+	public int getVolume(){
+		return volume;
+	}
 
-    public void nextSong() {
-        if (this.listening == Playlists.RADIO) {
-            JukeBox.sendMessage(Bukkit.getPlayerExact(name), Lang.UNAVAILABLE_RADIO);
-            return;
-        }
-        if (this.songPlayer == null) {
-            this.playList((this.listening == Playlists.PLAYLIST) ? JukeBox.getPlaylist() : this.favorites);
-        } else {
-            this.finishPlaying();
-        }
-    }
+	public int setVolume(int volume){
+		if (id != null) NoteBlockAPI.setPlayerVolume(id, (byte) volume);
+		this.volume = volume;
+		if (linked != null) linked.volumeItem();
+		return volume;
+	}
 
-    /* public void playerJoin(final Player player) {
-        this.p = player;
-        //if (!replay) {
-        //    return;
-        //}
-        // if (JukeBox.radioOnJoin) {
-        //    this.setPlaylist(Playlists.RADIO, true);
-        //    return;
-        // }
-        //if (this.listening == Playlists.RADIO) {
-        //    return;
-        //}
-        if (p.hasPermission("ostrov.music")) {
-            if (this.songPlayer == null) {
-                if (this.hasJoinMusic()) {
-                    this.playRandom();
-                }
-            }
-        }// else if (!this.songPlayer.adminPlayed && JukeBox.autoReload) {
-        //   this.songPlayer.setPlaying(true);
-        //    JukeBox.sendMessage(this.p, String.valueOf(Lang.RELOAD_MUSIC) + " (" + JukeBox.getSongName(this.songPlayer.getSong()) + ")");
-        // }
-    }*/
-    //public void playerLeave() {
-    //if (!JukeBox.autoReload) {
-    //       this.stopPlaying(false);
-    //}
-    //}
-    protected void playSong(final boolean next) {
-        if (this.listening == Playlists.PLAYLIST && !this.randomPlaylist.isEmpty()) {
-            this.songPlayer.playSong((int) this.randomPlaylist.get(0));
-            final int id = this.randomPlaylist.remove(0);
-            if (next && this.linked != null) {
-                this.linked.songItem(id);
-            }
-        }
-        JukeBox.sendMessage(Bukkit.getPlayerExact(name), String.valueOf(Lang.MUSIC_PLAYING) + " " + JukeBox.getSongName(this.songPlayer.getSong()));
-    }
 
-    public UUID getID() {
-        return this.id;
-    }
+	
+	public boolean isRepeatEnabled(){
+		return repeat;
+	}
+	
+	public boolean setRepeat(boolean repeat){
+		this.repeat = repeat;
+		if (songPlayer != null) songPlayer.setRepeatMode(repeat ? RepeatMode.ONE : (listening == Playlists.FAVORITES && favorites == null ? RepeatMode.NO : RepeatMode.ALL));
+		if (linked != null) linked.repeatItem();
+		return repeat;
+	}
+	
+	public Playlist getFavorites() {
+		return favorites;
+	}
+	
+	public void setFavorites(Song... songs) {
+		favorites = new Playlist(songs);
+	}
 
-    public boolean hasJoinMusic() {
-        return this.join;
-    }
+	public boolean isDefault(PlayerData base){
+		//if (base.hasJoinMusic() != hasJoinMusic()) if (!JukeBox.autoJoin) return false;
+		if (base.isShuffle() != isShuffle()) return false;
+		if (base.getVolume() != getVolume()) return false;
+		if (base.isRepeatEnabled() != isRepeatEnabled()) return false;
+		return true;
+	}
 
-    public boolean setJoinMusic(final boolean join) {
-        this.join = join;
-        if (this.linked != null) {
-            this.linked.joinItem();
-        }
-        return join;
-    }
+	public Map<String, Object> serialize(){
+		Map<String, Object> map = new HashMap<>();
+		map.put("id", id.toString());
 
-    public boolean isShuffle() {
-        return this.shuffle;
-    }
+		//map.put("join", hasJoinMusic());
+		map.put("shuffle", isShuffle());
+		map.put("volume", getVolume());
+		map.put("repeat", isRepeatEnabled());
+		map.put("playlist", listening.name());
+		
+		if (favorites != null) {
+			List<String> list = new ArrayList<>();
+			for (Song song : favorites.getSongList()) list.add(JukeBox.getInternal(song));
+			if (!list.isEmpty()) map.put("favorites", list);
+		}
 
-    public boolean setShuffle(final boolean shuffle) {
-        this.shuffle = shuffle;
-        if (this.songPlayer != null) {
-            this.songPlayer.setRandom(true);
-        }
-        if (this.linked != null) {
-            this.linked.shuffleItem();
-        }
-        return shuffle;
-    }
+		return map;
+	}
 
-    public int getVolume() {
-        return this.volume;
-    }
+	static PlayerData create(UUID id){
+		PlayerData pdata = new PlayerData(id, JukeBox.defaultPlayer);
+		//if (JukeBox.autoJoin) pdata.setJoinMusic(true);
+		return pdata;
+	}
 
-    public int setVolume(final int volume) {
-        if (this.id != null) {
-            NoteBlockAPI.setPlayerVolume(this.id, (byte) volume);
-        }
-        this.volume = volume;
-        if (this.linked != null) {
-            this.linked.volumeItem();
-        }
-        return volume;
-    }
+	public static PlayerData deserialize(Map<String, Object> map, Map<String, Song> songsName) {
+		PlayerData pdata = new PlayerData(map.containsKey("id") ? UUID.fromString((String) map.get("id")) : null);
 
-    public boolean hasParticles() {
-        return this.particles;
-    }
+		//pdata.setJoinMusic((boolean) map.get("join"));
+		pdata.setShuffle((boolean) map.get("shuffle"));
+		if (map.containsKey("volume")) pdata.setVolume((int) map.get("volume"));
+		if (map.containsKey("repeat")) pdata.setRepeat((boolean) map.get("repeat"));
+		
+		if (map.containsKey("favorites")) {
+			pdata.setPlaylist(Playlists.FAVORITES, false);
+			for (String s : (List<String>) map.get("favorites")) {
+				Song song = songsName.get(s);
+				if (song == null) {
+					JukeBox.getInstance().getLogger().warning("Unknown song \"" + s + "\" for favorite playlist of " + pdata.getID().toString());
+				}else pdata.addSong(song, false);
+			}
+			pdata.setPlaylist(Playlists.PLAYLIST, false);
+		}
+		if (map.containsKey("playlist")) {
+			pdata.setPlaylist(Playlists.valueOf((String) map.get("playlist")), false);
+		}
+		
+		//if (JukeBox.autoJoin) pdata.setJoinMusic(true);
 
-    public boolean setParticles(final boolean particles) {
-        if (this.songPlayer != null) {
-            this.songPlayer.setParticlesEnabled(particles);
-        }
-        this.particles = particles;
-        if (this.linked != null) {
-            this.linked.particlesItem();
-        }
-        return particles;
-    }
-
-    public boolean isRepeatEnabled() {
-        return this.repeat;
-    }
-
-    public boolean setRepeat(final boolean repeat) {
-        this.repeat = repeat;
-        if (this.songPlayer != null) {
-            this.songPlayer.setRepeatMode(repeat ? RepeatMode.ONE : ((this.listening == Playlists.FAVORITES && this.favorites == null) ? RepeatMode.NO : RepeatMode.ALL));
-        }
-        if (this.linked != null) {
-            this.linked.repeatItem();
-        }
-        return repeat;
-    }
-
-    public boolean isDefault(final PlayerData base) {
-        return (base.hasJoinMusic() == this.hasJoinMusic() || JukeBox.autoJoin) && base.isShuffle() == this.isShuffle() && base.getVolume() == this.getVolume() && base.hasParticles() == this.hasParticles() && base.isRepeatEnabled() == this.isRepeatEnabled();
-    }
-
-    /* public Map<String, Object> serialize() {
-        final Map<String, Object> map = new HashMap<String, Object>();
-        map.put("id", this.id.toString());
-        map.put("join", this.hasJoinMusic());
-        map.put("shuffle", this.isShuffle());
-        map.put("volume", this.getVolume());
-        map.put("particles", this.hasParticles());
-        map.put("repeat", this.isRepeatEnabled());
-        if (this.favorites != null) {
-            final List<String> list = new ArrayList<String>();
-            for (final Song song : this.favorites.getSongList()) {
-                list.add(JukeBox.getInternal(song));
-            }
-            map.put("favorites", list);
-        }
-        return map;
-    }*/
-    public static PlayerData deserialize(final Map<String, Object> map, final Map<String, Song> songsName) {
-        final PlayerData pdata = new PlayerData("defaultPlayerOptions", map.containsKey("id") ? UUID.fromString((String) map.get("id")) : null);
-        pdata.setJoinMusic((boolean) map.get("join"));
-        pdata.setShuffle((boolean) map.get("shuffle"));
-        if (map.containsKey("volume")) {
-            pdata.setVolume((int) map.get("volume"));
-        }
-        if (map.containsKey("particles")) {
-            pdata.setParticles((boolean) map.get("particles"));
-        }
-        if (map.containsKey("repeat")) {
-            pdata.setRepeat((boolean) map.get("repeat"));
-        }
-        if (map.containsKey("favorites")) {
-            pdata.setPlaylist(Playlists.FAVORITES, false);
-            List<String> favorites = (List<String>) map.get("favorites");
-            for (final String s : favorites) {
-                final Song song = songsName.get(s);
-                if (song == null) {
-                    JukeBox.getInstance().getLogger().warning("Song \"" + s + "\" for playlist of " + pdata.getID().toString());
-                } else {
-                    pdata.addSong(song, false);
-                }
-            }
-            pdata.setPlaylist(Playlists.PLAYLIST, false);
-        }
-        return pdata;
-    }
+		return pdata;
+	}
+	
 }

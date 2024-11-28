@@ -1,39 +1,40 @@
-NEXT_PAGE: §bдальше
-LATER_PAGE: §bназад
-PLAYER: §cYou must be a player to do this command.
-RELOAD_MUSIC: §aMusic reloaded.
-INV_NAME: §dПлеер
-TOGGLE_PLAYING: §6Играть/пауза
+NEXT_PAGE: §bСледующая страница
+LATER_PAGE: §bПредыдущая страница
+PLAYER: §cВы должны быть игроком для выполнения этой команды.
+RELOAD_MUSIC: §aМузыка перезагружена.
+INV_NAME: §d§lПроигрыватель !
+TOGGLE_PLAYING: §6Пауза/Играть
 VOLUME: '§9Громкость : §b'
-RIGHT_CLICK: '§eПКМ: убавить 10%'
-LEFT_CLICK: '§eЛКМ: прибавить 10%'
-RANDOM_MUSIC: §3Случайный трек
-STOP: §cСтоп
-MUSIC_STOPPED: §aОстановлено.
+RIGHT_CLICK: '§eПравая кнопка мыши: уменьшить на 10%'
+LEFT_CLICK: '§eЛевая кнопка мыши: увеличить на 10%'
+RANDOM_MUSIC: §3Случайная музыка
+STOP: §cОстановить музыку
+MUSIC_STOPPED: §aМузыка остановлена.
 ENABLE: Включить
 DISABLE: Выключить
-ENABLED: Включено
-DISABLED: Выключено
-SHUFFLE_MODE: перемешивание
-LOOP_MODE: метки
-CONNEXION_MUSIC: музыку при входе
-PARTICLES: particles
-MUSIC_PLAYING: '§aИграет:'
-INCORRECT_SYNTAX: §cIncorrect syntax.
-RELOAD_LAUNCH: §aTrying to reload.
-RELOAD_FINISH: §aReload finished.
-AVAILABLE_COMMANDS: '§aAvailable commands:'
-INVALID_NUMBER: §cInvalid number.
-PLAYER_MUSIC_STOPPED: '§aMusic stopped for player: §b'
-IN_PLAYLIST: §9§oВ плэйлисте
-PLAYLIST_ITEM: §dПлэйлист
+ENABLED: Включен
+DISABLED: Выключен
+TOGGLE_SHUFFLE_MODE: '{TOGGLE} режим случайного воспроизведения'
+TOGGLE_LOOP_MODE: '{TOGGLE} режим повтора'
+TOGGLE_CONNEXION_MUSIC: '{TOGGLE} режим музыки при подключении'
+TOGGLE_PARTICLES: '{TOGGLE} режим частиц'
+MUSIC_PLAYING: '§aМузыка во время игры:'
+INCORRECT_SYNTAX: §cНеверный синтаксис.
+RELOAD_LAUNCH: §aПопытка перезагрузки.
+RELOAD_FINISH: §aПерезагрузка завершена.
+AVAILABLE_COMMANDS: '§aДоступные команды:'
+INVALID_NUMBER: §cНеверный номер.
+PLAYER_MUSIC_STOPPED: '§aМузыка остановлена для игрока: §b'
+IN_PLAYLIST: §9§oВ плейлист
+PLAYLIST_ITEM: §dПлейлисты
 OPTIONS_ITEM: §bНастройки
-MENU_ITEM: §6Главное меню
-CLEAR_PLAYLIST: §cОчистить плэйлист
-NEXT_ITEM: §eслед.композиция
-CHANGE_PLAYLIST: '§6§lПереключить плэйлист: §r'
-PLAYLIST: §5Плэйлист
+MENU_ITEM: §6Вернуться в меню
+CLEAR_PLAYLIST: §cОчистить текущий плейлист
+NEXT_ITEM: §eСледующая музыка
+CHANGE_PLAYLIST: '§6§lСменить плейлист: §r'
+PLAYLIST: §5Плейлист
 FAVORITES: §4Избранное
 RADIO: §3Радио
-UNAVAILABLE_RADIO: §cНедоступно во аремя работы радио.
-NONE: §cнет
+UNAVAILABLE_RADIO: §cДействие недоступно во время прослушивания радио.
+NONE: §cничего
+# Translated by Astrogue
